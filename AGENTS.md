@@ -8,6 +8,19 @@
 * If new folders appear in the repository, ask for their purpose before working with them.
 * Make sure to use synthetic data for everything.
 
+## Conversation Recording
+* Every time a new conversation with the LLM starts, ask whether the conversation should be recorded. Do this with no exceptions.
+* If the answer is yes:
+  * Ask which sprint of the project we are in.
+  * Record every interaction in `/conversations/Sprint<number>/<CurrentDate>`.
+  * Record each interaction in this format:
+
+    ## User prompt:
+    <Report_User_Prompt>
+
+    ## AI Reply
+    <Report_AI_Reply>
+
 ## Coding Standards
 * Keep the code as simple as possible. Do not rely on complex patterns. The product needs to be functional, but it does not need to be a "real product."
 * Use synthetic data for everything. 
