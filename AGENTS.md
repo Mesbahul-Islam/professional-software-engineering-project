@@ -25,6 +25,12 @@
 * Keep the code as simple as possible. Do not rely on complex patterns. The product needs to be functional, but it does not need to be a "real product."
 * Use synthetic data for everything. 
 
+## Project Structure
+* `/docs` – knowledge base (instructions, persona cards, user stories).
+* `/mockups` – Sprint 1 dashboard mockup (plain HTML/CSS, synthetic data). The team voted for **Version B "Three Lanes"** (`version-b-three-lanes.html`): one column per role, aligned rows, dropdowns for detail, shared trade-off dropdown underneath. Versions A and C were removed.
+  * UI rules: label stakeholders by role (CIO, Project Manager, Security Officer), never by persona name. The first screen shows only the overall status and one big headline per role; more detail is revealed progressively through cards, tabs and dropdowns.
+* `/conversations/Sprint<n>/<date>.md` – recorded LLM conversations.
+
 ## Best Practice
 * Remind me to pull from the main branch before pushing.
 * Update the AGENTS.md, CLAUDE.md file for important changes made to the project.
