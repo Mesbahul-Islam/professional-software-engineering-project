@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PQC Dashboard – Version A: Layered Briefing</title>
+<!--
+  MOCKUP – Version A "Layered Briefing" (clean, progressive disclosure)
+    Level 1 (first screen): overall status + one big headline per role.
+    Level 2: four counters. Click one -> its panel opens with tabs.
+    Level 3: inside a panel, each row can be expanded for full context.
+  All data is SYNTHETIC. Roles are used instead of names.
+-->
+<style>
+  :root {
+    --cio: #7c3aed; --pm: #2563eb; --sec: #0e7490;
+    --red: #dc2626; --amber: #d97706; --green: #16a34a;
+    --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f5f6f8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 24px; background: #fff; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 20px; margin: 0; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  .synthetic { margin-left: auto; background: #fef3c7; color: #78350f; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
+  .role { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .role.cio { color: var(--cio); } .role.pm { color: var(--pm); } .role.sec { color: var(--sec); }
+  .muted { color: var(--muted); }
+  .pill { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .pill.red { background: #fee2e2; color: var(--red); } .pill.amber { background: #fef3c7; color: #92400e; } .pill.green { background: #dcfce7; color: #166534; }
+
+  /* Level 1 */
+  .status { display: flex; align-items: center; gap: 24px; background: #fff; border-radius: 16px; padding: 28px 32px; border: 1px solid var(--line); }
+  .light { width: 72px; height: 72px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 10px #fef3c7; flex: none; }
+  .status h2 { margin: 0; font-size: 34px; color: #92400e; }
+  .status p { margin: 4px 0 0; font-size: 18px; }
+  details.why { margin-top: 10px; }
+  details.why summary { cursor: pointer; color: var(--pm); font-size: 15px; }
+  details.why ul { margin: 8px 0 0; padding-left: 20px; font-size: 15px; }
+
+  .headlines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+  .headline { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 24px; border-top: 6px solid; }
+  .headline.cio { border-top-color: var(--cio); } .headline.pm { border-top-color: var(--pm); } .headline.sec { border-top-color: var(--sec); }
+  .headline .q { font-size: 15px; color: var(--muted); margin: 4px 0 10px; }
+  .headline .big { font-size: 44px; font-weight: 800; line-height: 1.1; }
+  .headline .big small { font-size: 18px; font-weight: 600; color: var(--muted); }
+
+  /* Level 2: counters */
+  h3.section { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 40px 0 12px; }
+  .counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .counter { background: #fff; border: 2px solid var(--line); border-radius: 14px; padding: 18px 20px; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .counter:hover { border-color: #9ca3af; }
+  .counter.open { border-color: var(--ink); }
+  .counter .n { font-size: 40px; font-weight: 800; line-height: 1.1; }
+  .counter .label { font-size: 16px; }
+  .counter .hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* Level 2 panel with tabs */
+  .panel { display: none; background: #fff; border: 2px solid var(--ink); border-radius: 14px; margin-top: 16px; padding: 20px 24px; }
+  .panel.show { display: block; }
+  .panel h4 { margin: 0 0 12px; font-size: 20px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .tabs button { font: inherit; font-size: 15px; background: none; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; cursor: pointer; color: var(--muted); }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+  .tab { display: none; } .tab.on { display: block; }
+
+  /* Level 3: expandable rows */
+  details.row { border-bottom: 1px solid var(--line); padding: 12px 0; }
+  details.row summary { cursor: pointer; display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 16px; list-style: none; }
+  details.row summary::before { content: "▸"; color: var(--muted); margin-right: 6px; }
+  details.row[open] summary::before { content: "▾"; }
+  details.row summary span:first-child { flex: 1; }
+  details.row .body { margin: 10px 0 4px 22px; font-size: 15px; color: #374151; }
+  dl { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; margin: 0; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  .explain { font-size: 14px; color: var(--muted); margin-top: 16px; }
+
+  @media (max-width: 900px) { .headlines { grid-template-columns: 1fr; } .counters { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .counters { grid-template-columns: 1fr; } .status { flex-direction: column; align-items: flex-start; } dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>PQC Migration Dashboard</h1>
+  <span class="meta">Aurora Grid (fictional) · 11 Nov 2026</span>
+  <span class="synthetic">SYNTHETIC DATA · MOCKUP A</span>
+</header>
+
+<main>
+  <!-- ================= LEVEL 1 ================= -->
+  <section class="status">
+    <div class="light" aria-hidden="true"></div>
+    <div>
+      <h2>AMBER</h2>
+      <p>Migration is progressing, but action is needed before the contract deadline.</p>
+      <details class="why">
+        <summary>Why is this not green?</summary>
+        <ul>
+          <li>Sensitive, long-lived data is still sent without quantum-safe encryption.</li>
+          <li>One suspected attack on a connection is still open.</li>
+          <li>The readiness forecast is below the contract target.</li>
+        </ul>
+        <p class="muted" style="font-size:14px;margin:8px 0 0">Green only when all three are solved. Accepted exceptions still count as exposure.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="headlines">
+    <div class="headline cio">
+      <span class="role cio">CIO</span>
+      <div class="q">Do I need to worry?</div>
+      <div class="big">At risk</div>
+      <div class="muted">Contract milestone in 140 days</div>
+    </div>
+    <div class="headline pm">
+      <span class="role pm">Project Manager</span>
+      <div class="q">How close are we?</div>
+      <div class="big">72 <small>/ 100</small></div>
+      <div class="muted">Readiness · target 85 · ▲ 3 this month</div>
+    </div>
+    <div class="headline sec">
+      <span class="role sec">Security Officer</span>
+      <div class="q">What is still vulnerable?</div>
+      <div class="big">112 <small>connections</small></div>
+      <div class="muted">On classical (quantum-vulnerable) fallback</div>
+    </div>
+  </section>
+
+  <!-- ================= LEVEL 2 ================= -->
+  <h3 class="section">Explore · click a card for details</h3>
+  <section class="counters">
+    <button class="counter" data-panel="p-risks">
+      <span class="role cio">CIO</span>
+      <div class="n">3</div><div class="label">Top risks</div>
+      <div class="hint">In plain business language</div>
+    </button>
+    <button class="counter" data-panel="p-blockers">
+      <span class="role pm">Project Manager</span>
+      <div class="n">38</div><div class="label">Devices blocking readiness</div>
+      <div class="hint">9 exceptions · 1 expired</div>
+    </button>
+    <button class="counter" data-panel="p-fallback">
+      <span class="role sec">Security Officer</span>
+      <div class="n">0.9 GB</div><div class="label">Sensitive data / week exposed</div>
+      <div class="hint">Of 4.2 GB on fallback</div>
+    </button>
+    <button class="counter" data-panel="p-alerts">
+      <span class="role sec">Security Officer</span> · <span class="role cio">CIO</span>
+      <div class="n" style="color:var(--red)">2</div><div class="label">Suspected attacks</div>
+      <div class="hint">1 high severity</div>
+    </button>
+  </section>
+
+  <!-- Panels (one visible at a time) -->
+  <section class="panel" id="p-risks">
+    <h4>Top 3 risks</h4>
+    <div class="tabs"><button class="on" data-tab="r1">Risks</button><button data-tab="r2">Planned steps &amp; outages</button><button data-tab="r3">Notifications sent</button></div>
+    <div class="tab on" id="r1">
+      <details class="row"><summary><span>1. Sensitive control data could be decrypted in the future</span><span class="pill red">High</span></summary>
+        <div class="body">12 older field devices send control and credential data that stays valuable for 10+ years. An attacker can record it today and decrypt it once quantum computers exist.<br><b>Decision needed:</b> prioritise replacing these 12 devices within the current budget.</div></details>
+      <details class="row"><summary><span>2. Customer contract milestone may be missed</span><span class="pill amber">Medium</span></summary>
+        <div class="body">The contract requires readiness 85 by 31 Mar 2027. At the current pace we reach about 80. The firmware update on 15 Dec would add about 4 points.<br><b>Decision needed:</b> protect the 15 Dec update window.</div></details>
+      <details class="row"><summary><span>3. Possible tampering on one substation link</span><span class="pill amber">Medium</span></summary>
+        <div class="body">The security team is investigating and will report by 13 Nov. No decision needed yet.</div></details>
+    </div>
+    <div class="tab" id="r2">
+      <details class="row"><summary><span>15 Dec · Firmware update for 9 devices</span><span class="pill amber">Medium outage risk</span></summary>
+        <div class="body">Customer meter portal restarts for ~20 minutes. Planned in a night window.</div></details>
+      <details class="row"><summary><span>31 Dec · Proposed: switch off fallback everywhere</span><span class="pill red">High outage risk</span></summary>
+        <div class="body">Customer meter portal and public outage map would lose data. 38 devices disconnected; monitoring coverage 100 % → 87 %.</div></details>
+      <details class="row"><summary><span>Feb 2027 · Install 5 certified replacement units</span><span class="pill green">Low outage risk</span></summary>
+        <div class="body">No customer-facing services affected.</div></details>
+    </div>
+    <div class="tab" id="r3">
+      <details class="row"><summary><span>10 Nov · Suspected attack on substation gateway</span><span class="muted">email + SMS</span></summary>
+        <div class="body">Sent within 1 hour of detection (high severity).</div></details>
+      <details class="row"><summary><span>04 Nov · Contract milestone moved to “at risk”</span><span class="muted">weekly digest</span></summary>
+        <div class="body">Forecast dropped below 85 after vendor delay.</div></details>
+    </div>
+  </section>
+
+  <section class="panel" id="p-blockers">
+    <h4>What is blocking readiness</h4>
+    <div class="tabs"><button class="on" data-tab="b1">By reason</button><button data-tab="b2">Exceptions</button><button data-tab="b3">Score trend</button></div>
+    <div class="tab on" id="b1">
+      <details class="row"><summary><span>No quantum-safe support in hardware</span><span><b>21</b> devices</span></summary>
+        <div class="body"><dl><dt>Unblocks</dt><dd>Q2 2028 – certified replacements</dd><dt>Owner</dt><dd>Field operations team</dd><dt>Examples</dt><dd>RTU-N-031, RTU-N-044, SNS-W-207</dd></dl></div></details>
+      <details class="row"><summary><span>Firmware ready, not yet deployed</span><span><b>9</b> devices</span></summary>
+        <div class="body"><dl><dt>Unblocks</dt><dd>15 Dec 2026 (+4 readiness points)</dd><dt>Owner</dt><dd>Migration team</dd><dt>Examples</dt><dd>MTR-GW-12, CAM-N-019</dd></dl></div></details>
+      <details class="row"><summary><span>Vendor certification pending</span><span><b>5</b> devices</span></summary>
+        <div class="body"><dl><dt>Unblocks</dt><dd>Feb 2027</dd><dt>Owner</dt><dd>Procurement</dd><dt>Examples</dt><dd>PLC-S-008</dd></dl></div></details>
+      <details class="row"><summary><span>Unknown – under investigation</span><span><b>3</b> devices</span></summary>
+        <div class="body"><dl><dt>Owner</dt><dd>Security team</dd><dt>Examples</dt><dd>SG-14</dd></dl></div></details>
+    </div>
+    <div class="tab" id="b2">
+      <details class="row"><summary><span>EX-04 · PLC-S-008</span><span class="pill red">Expired 01 Nov</span></summary>
+        <div class="body"><dl><dt>Reason</dt><dd>Vendor certification pending</dd><dt>Owner</dt><dd>Procurement lead</dd></dl></div></details>
+      <details class="row"><summary><span>EX-01 · RTU-N-031</span><span class="pill amber">Expires 30 Nov</span></summary>
+        <div class="body"><dl><dt>Reason</dt><dd>No quantum-safe support, replacement 2028</dd><dt>Owner</dt><dd>Field operations lead</dd></dl></div></details>
+      <details class="row"><summary><span>EX-03 · CAM-N-019</span><span class="pill amber">Expires 10 Dec</span></summary>
+        <div class="body"><dl><dt>Reason</dt><dd>Waiting for firmware update</dd><dt>Owner</dt><dd>Migration team lead</dd></dl></div></details>
+      <p class="explain">+ 6 more exceptions that are not close to expiry. An exception accepts the risk; it does not remove it.</p>
+    </div>
+    <div class="tab" id="b3">
+      <svg width="100%" height="160" viewBox="0 0 600 160" aria-label="Readiness Jun 58, Jul 61, Aug 64, Sep 66, Oct 69, Nov 72; target 85">
+        <line x1="40" y1="30" x2="590" y2="30" stroke="#111827" stroke-dasharray="5 5"/>
+        <text x="40" y="22" font-size="13" fill="#111827">Target 85</text>
+        <polyline fill="none" stroke="#2563eb" stroke-width="3" points="40,140 150,126 260,112 370,103 480,89 590,75"/>
+        <g font-size="13" fill="#6b7280"><text x="40" y="158">Jun</text><text x="260" y="158">Aug</text><text x="560" y="158">Nov</text></g>
+      </svg>
+      <p class="explain">Score = quantum-safe connections, weighted by data sensitivity (high = ×3). 91 % of connections are already safe, but the rest carry sensitive data.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-fallback">
+    <h4>Quantum-vulnerable connections</h4>
+    <div class="tabs"><button class="on" data-tab="f1">Highest exposure</button><button data-tab="f2">Switch-off trade-off</button></div>
+    <div class="tab on" id="f1">
+      <details class="row"><summary><span>MTR-GW-12 → billing-api</span><span class="pill red">High</span></summary>
+        <div class="body"><dl><dt>Traffic</dt><dd>1.10 GB / week</dd><dt>Data</dt><dd>Customer usage · valuable 7 years</dd><dt>Key exchange</dt><dd>X25519 (classical)</dd></dl></div></details>
+      <details class="row"><summary><span>RTU-N-031 → scada-hub-01</span><span class="pill red">High</span></summary>
+        <div class="body"><dl><dt>Traffic</dt><dd>0.41 GB / week</dd><dt>Data</dt><dd>Control commands · valuable 10+ years</dd><dt>Key exchange</dt><dd>X25519 (classical)</dd></dl></div></details>
+      <details class="row"><summary><span>RTU-N-044 → scada-hub-01</span><span class="pill red">High</span></summary>
+        <div class="body"><dl><dt>Traffic</dt><dd>0.38 GB / week</dd><dt>Data</dt><dd>Config &amp; credentials · valuable 10+ years</dd><dt>Key exchange</dt><dd>ECDHE P-256 (classical)</dd></dl></div></details>
+      <details class="row"><summary><span>SNS-W-207 → telemetry-ingest</span><span class="pill green">Low</span></summary>
+        <div class="body"><dl><dt>Traffic</dt><dd>0.95 GB / week</dd><dt>Data</dt><dd>Pressure readings · worthless after ~3 days</dd></dl></div></details>
+      <p class="explain">+ 108 more connections. Exposure = traffic × how long the data stays valuable.</p>
+    </div>
+    <div class="tab" id="f2">
+      <dl style="font-size:16px">
+        <dt>Would protect</dt><dd>4.2 GB / week leaves the harvest window; 112 attack paths closed</dd>
+        <dt>Would cost</dt><dd>38 devices offline · monitoring 100 % → 87 % · 2 customer services lose data</dd>
+        <dt>Middle option</dt><dd>Switch off only on 12 high-sensitivity devices: removes 0.9 GB/week, no customer impact</dd>
+      </dl>
+      <p class="explain">Security Officer: switch off by 31 Dec · Project Manager: keep until 2028 · CIO: no customer outages.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-alerts">
+    <h4>Suspected downgrade attacks</h4>
+    <details class="row"><summary><span>DG-0193 · Substation gateway SG-14</span><span class="pill red">High · investigating</span></summary>
+      <div class="body"><dl><dt>When</dt><dd>10 Nov 03:12</dd><dt>Peer</dt><dd>scada-hub-02</dd><dt>Negotiated</dt><dd>X25519 only</dd><dt>Normally</dt><dd>X25519MLKEM768 for the last 60 days</dd><dt>What changed</dt><dd>Quantum-safe key share missing; new hop 10.4.7.22 in the path</dd></dl></div></details>
+    <details class="row"><summary><span>DG-0191 · Meter gateway MTR-GW-12</span><span class="pill amber">Medium · open</span></summary>
+      <div class="body"><dl><dt>When</dt><dd>08 Nov 14:50</dd><dt>Peer</dt><dd>billing-api</dd><dt>Negotiated</dt><dd>ECDHE P-256 after retries</dd><dt>Normally</dt><dd>0–1 retries per day</dd><dt>What changed</dt><dd>14 handshake failures in 1 hour, then fell back to classical</dd></dl></div></details>
+  </section>
+</main>
+
+<script>
+  // Level 2: clicking a counter opens its panel (and closes others).
+  document.querySelectorAll('.counter').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var panel = document.getElementById(btn.dataset.panel);
+      var wasOpen = panel.classList.contains('show');
+      document.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('show'); });
+      document.querySelectorAll('.counter').forEach(function (c) { c.classList.remove('open'); });
+      if (!wasOpen) { panel.classList.add('show'); btn.classList.add('open'); panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    });
+  });
+  // Tabs inside a panel.
+  document.querySelectorAll('.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var panel = b.closest('.panel');
+      panel.querySelectorAll('.tabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      panel.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t.id === b.dataset.tab); });
+    });
+  });
+</script>
+</body>
+</html>

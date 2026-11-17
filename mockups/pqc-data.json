@@ -1,0 +1,413 @@
+{
+  "meta": {
+    "organisation": "Aurora Grid (fictional)",
+    "project": "PQC migration dashboard",
+    "data_version": "2.0",
+    "sprint": 2,
+    "synthetic": true,
+    "status_rule": "Green only when no sensitive data is on fallback, no open high-severity alert, and the forecast meets the contract target. Exceptions are accepted risk, not removed risk.",
+    "how_to_use": "Every stat and report has a 'default' value and optional per-situation overrides. The dashboard shows the value for the selected situation, or 'default' if there is no override. Edit this file and reload the page."
+  },
+
+  "default_situation": "routine",
+
+  "situations": [
+    { "id": "routine", "label": "Routine week", "as_of": "2026-11-11", "summary": "Normal operation. Two alerts open from the last week." },
+    { "id": "suspected_attack", "label": "Active attack on SG-14", "as_of": "2026-11-10", "summary": "A high-severity path change on a substation gateway is under investigation." },
+    { "id": "firmware_window", "label": "After 15 Dec firmware wave", "as_of": "2026-12-16", "summary": "Wave 2 is deployed. A decision on switching off fallback is due by 31 Dec." },
+    { "id": "deadline_pressure", "label": "Contract deadline pressure", "as_of": "2027-02-01", "summary": "58 days to the contract milestone, and the forecast is below target." }
+  ],
+
+  "roles": {
+    "cio": { "label": "CIO", "question": "Do I need to worry?", "colour": "#7c3aed" },
+    "pm": { "label": "Project Manager", "question": "How close are we?", "colour": "#2563eb" },
+    "sec": { "label": "Security Officer", "question": "What is still vulnerable?", "colour": "#0e7490" }
+  },
+
+  "layout": {
+    "title": "PQC Migration Dashboard",
+    "lanes": [
+      {
+        "role": "cio",
+        "top_stat": "contract_status",
+        "drops": [
+          { "label": "Top 3 risks", "type": "report", "source": "cio_top_risks" },
+          { "label": "Customer outage risk of planned steps", "type": "report", "source": "cio_planned_steps" },
+          { "label": "Notifications sent to you", "type": "report", "source": "cio_notifications" }
+        ]
+      },
+      {
+        "role": "pm",
+        "top_stat": "readiness",
+        "drops": [
+          { "label": "What is blocking", "type": "report", "source": "pm_blockers" },
+          { "label": "Exceptions", "type": "report", "source": "pm_exceptions" },
+          { "label": "Score trend", "type": "trend", "stat": "readiness", "note": "Weighted by data sensitivity." }
+        ]
+      },
+      {
+        "role": "sec",
+        "top_stat": "fallback_exposure",
+        "drops": [
+          { "label": "Suspected attacks", "type": "report", "source": "sec_attacks" },
+          { "label": "Highest-exposure connections", "type": "report", "source": "sec_exposure" },
+          { "label": "Why the status is not green", "type": "checks", "stat": "fallback_checks", "note": "Exceptions are accepted risk, not removed risk." }
+        ]
+      }
+    ],
+    "decision": { "label": "Where the roles disagree", "stat": "fallback_decision" }
+  },
+
+  "stats": {
+    "overall_status": {
+      "values": {
+        "default": { "big": "AMBER", "tone": "amber", "source": "status rules v1", "updated": "2026-11-11 08:00" },
+        "suspected_attack": { "big": "RED", "tone": "red", "source": "status rules v1", "updated": "2026-11-10 09:15" },
+        "firmware_window": { "big": "AMBER", "tone": "amber", "source": "status rules v1", "updated": "2026-12-16 08:00" },
+        "deadline_pressure": { "big": "RED", "tone": "red", "source": "status rules v1", "updated": "2027-02-01 08:00" }
+      }
+    },
+
+    "contract_status": {
+      "values": {
+        "default": { "big": "At risk", "tone": "amber", "line": "Contract milestone in 140 days (31 Mar 2027)", "source": "milestone tracker", "updated": "2026-11-11 08:00" },
+        "suspected_attack": { "big": "Act now", "tone": "red", "line": "Milestone in 141 days, but an open attack path must be closed first", "source": "milestone tracker + SOC console", "updated": "2026-11-10 09:15" },
+        "firmware_window": { "big": "Improving", "tone": "amber", "line": "Forecast 84 vs required 85 · milestone in 105 days", "source": "milestone tracker", "updated": "2026-12-16 08:00" },
+        "deadline_pressure": { "big": "Off track", "tone": "red", "line": "Forecast 82 vs required 85 · 58 days left", "source": "milestone tracker", "updated": "2027-02-01 08:00" }
+      }
+    },
+
+    "readiness": {
+      "values": {
+        "default": {
+          "big": "72", "big_unit": "/ 100", "tone": "amber", "target": 85,
+          "line": "Target 85 · ▲ 3 this month",
+          "trend": [{ "m": "Jun", "v": 58 }, { "m": "Jul", "v": 62 }, { "m": "Aug", "v": 65 }, { "m": "Sep", "v": 68 }, { "m": "Oct", "v": 69 }, { "m": "Nov", "v": 72 }],
+          "source": "readiness scorer v1", "updated": "2026-11-11 08:00"
+        },
+        "suspected_attack": {
+          "big": "71", "big_unit": "/ 100", "tone": "amber", "target": 85,
+          "line": "Target 85 · ▲ 2 this month",
+          "trend": [{ "m": "Jun", "v": 58 }, { "m": "Jul", "v": 62 }, { "m": "Aug", "v": 65 }, { "m": "Sep", "v": 68 }, { "m": "Oct", "v": 69 }, { "m": "Nov", "v": 71 }],
+          "source": "readiness scorer v1", "updated": "2026-11-10 09:15"
+        },
+        "firmware_window": {
+          "big": "77", "big_unit": "/ 100", "tone": "amber", "target": 85,
+          "line": "Target 85 · ▲ 5 this month",
+          "trend": [{ "m": "Jul", "v": 62 }, { "m": "Aug", "v": 65 }, { "m": "Sep", "v": 68 }, { "m": "Oct", "v": 69 }, { "m": "Nov", "v": 72 }, { "m": "Dec", "v": 77 }],
+          "source": "readiness scorer v1", "updated": "2026-12-16 08:00"
+        },
+        "deadline_pressure": {
+          "big": "79", "big_unit": "/ 100", "tone": "amber", "target": 85,
+          "line": "Target 85 · ▲ 1 this month",
+          "trend": [{ "m": "Sep", "v": 68 }, { "m": "Oct", "v": 69 }, { "m": "Nov", "v": 72 }, { "m": "Dec", "v": 77 }, { "m": "Jan", "v": 78 }, { "m": "Feb", "v": 79 }],
+          "source": "readiness scorer v1", "updated": "2027-02-01 08:00"
+        }
+      }
+    },
+
+    "fallback_exposure": {
+      "values": {
+        "default": { "big": "112", "big_unit": "connections", "line": "0.9 GB/week of sensitive data exposed", "line_tone": "red", "source": "TLS handshake telemetry + device inventory", "updated": "2026-11-11 08:00" },
+        "suspected_attack": { "big": "118", "big_unit": "connections", "line": "1.3 GB/week, including the SG-14 path under attack", "line_tone": "red", "source": "TLS handshake telemetry + device inventory", "updated": "2026-11-10 09:15" },
+        "firmware_window": { "big": "84", "big_unit": "connections", "line": "0.4 GB/week of sensitive data exposed", "line_tone": "amber", "source": "TLS handshake telemetry + device inventory", "updated": "2026-12-16 08:00" },
+        "deadline_pressure": { "big": "96", "big_unit": "connections", "line": "0.7 GB/week of sensitive data exposed", "line_tone": "amber", "source": "TLS handshake telemetry + device inventory", "updated": "2027-02-01 08:00" }
+      }
+    },
+
+    "fallback_checks": {
+      "values": {
+        "default": [
+          { "text": "Sensitive data still on fallback", "failing": true },
+          { "text": "Open high-severity alert", "failing": true },
+          { "text": "Forecast below contract target", "failing": true }
+        ],
+        "suspected_attack": [
+          { "text": "Sensitive data still on fallback", "failing": true },
+          { "text": "Open high-severity alert", "failing": true },
+          { "text": "Forecast below contract target", "failing": true }
+        ],
+        "firmware_window": [
+          { "text": "Sensitive data still on fallback", "failing": true },
+          { "text": "Open high-severity alert", "failing": false },
+          { "text": "Forecast below contract target", "failing": true }
+        ],
+        "deadline_pressure": [
+          { "text": "Sensitive data still on fallback", "failing": true },
+          { "text": "Open high-severity alert", "failing": true },
+          { "text": "Forecast below contract target", "failing": true }
+        ]
+      }
+    },
+
+    "fallback_decision": {
+      "values": {
+        "default": {
+          "question": "Should classical fallback be switched off?",
+          "positions": [
+            { "role": "cio", "stance": "No customer outages, no extra budget.", "impact": "Switching off now → 2 customer services lose data." },
+            { "role": "pm", "stance": "Keep for legacy devices until 2028.", "impact": "Switching off now → 38 devices offline, monitoring 87 %." },
+            { "role": "sec", "stance": "Switch off everywhere by 31 Dec.", "impact": "Keeping it → 0.9 GB/week sensitive data harvestable." }
+          ],
+          "suggested": "Switch off only on the 12 high-sensitivity devices. This removes the sensitive exposure with no customer impact, and monitoring stays at 96 %."
+        },
+        "suspected_attack": {
+          "question": "Should SG-14 be isolated now, while the attack report is pending?",
+          "positions": [
+            { "role": "cio", "stance": "Isolate, if the outage is kept under 2 hours.", "impact": "Isolation takes the gateway offline for about 2 hours." },
+            { "role": "pm", "stance": "Isolate only after a firmware check.", "impact": "Delays the SG-14 firmware rollout by about a week." },
+            { "role": "sec", "stance": "Isolate now, do not wait for the report.", "impact": "Waiting until 13 Nov keeps the attack path open for 3 more days." }
+          ],
+          "suggested": "Isolate SG-14 this afternoon, keep the backup path via scada-hub-01 active, and re-check the handshake after isolation."
+        },
+        "firmware_window": {
+          "question": "Should fallback be switched off on the 12 high-sensitivity devices on 31 Dec?",
+          "positions": [
+            { "role": "cio", "stance": "Yes, if it stays in the night window.", "impact": "Two customer services are affected for about 20 min." },
+            { "role": "pm", "stance": "Yes, the 9 firmware devices are already done.", "impact": "Readiness moves from 77 to about 81." },
+            { "role": "sec", "stance": "Yes, and no later than 31 Dec.", "impact": "Keeping them → 0.4 GB/week sensitive data harvestable." }
+          ],
+          "suggested": "Switch off the 12 high-sensitivity devices on 31 Dec in the night window. Keep the other devices on fallback until February."
+        },
+        "deadline_pressure": {
+          "question": "Should fallback be switched off everywhere by 15 Feb?",
+          "positions": [
+            { "role": "cio", "stance": "Only if the outage map has a fallback view.", "impact": "Without one, the outage map loses data for up to 4 hours." },
+            { "role": "pm", "stance": "Yes, the forecast needs about 3 more points from this step.", "impact": "Without it the forecast stays at 82." },
+            { "role": "sec", "stance": "Yes, now.", "impact": "Keeping it → 0.7 GB/week sensitive data harvestable." }
+          ],
+          "suggested": "Switch off the 6 control devices first (week of 8 Feb), add the fallback outage view, then decide on the rest by 15 Feb."
+        }
+      }
+    }
+  },
+
+  "reports": {
+    "cio_top_risks": {
+      "by_situation": {
+        "default": {
+          "rows": [
+            { "title": "Sensitive data could be decrypted later", "tag": "High", "level": "high", "note": "12 older devices send control data that stays valuable for 10+ years. Decision: prioritise their replacement within the current budget." },
+            { "title": "Contract milestone may be missed", "tag": "Med", "level": "med", "note": "Forecast 80 vs required 85. The 15 Dec update adds about 4 points. Decision: protect that window." },
+            { "title": "Possible tampering on one link", "tag": "Med", "level": "med", "note": "Under investigation. Security report due 13 Nov." }
+          ]
+        },
+        "suspected_attack": {
+          "rows": [
+            { "title": "Live attack path on SG-14", "tag": "High", "level": "high", "note": "Substation gateway SG-14 negotiates without the post-quantum key exchange. Decision: approve isolation today." },
+            { "title": "Sensitive data could be decrypted later", "tag": "High", "level": "high", "note": "12 devices on fallback send control data with a 10+ year lifetime. The SG-14 path is one of them." },
+            { "title": "Contract milestone may be missed", "tag": "Med", "level": "med", "note": "Isolating SG-14 may need a firmware rollback on 2 substations." }
+          ]
+        },
+        "firmware_window": {
+          "rows": [
+            { "title": "Contract milestone at risk", "tag": "Med", "level": "med", "note": "Forecast 84 vs required 85. Wave 2 is in; the 31 Dec fallback decision closes most of the gap." },
+            { "title": "Sensitive data could be decrypted later", "tag": "Med", "level": "med", "note": "9 older devices still on fallback carry control data with a 10+ year lifetime." },
+            { "title": "Meter portal restarts after firmware", "tag": "Low", "level": "low", "note": "Restart seen in 4 of 5 substations. All inside the night window." }
+          ]
+        },
+        "deadline_pressure": {
+          "rows": [
+            { "title": "Contract milestone will be missed", "tag": "High", "level": "high", "note": "Forecast 82 vs required 85 with 58 days left. The fallback switch-off needs a decision this week." },
+            { "title": "Sensitive data still harvestable", "tag": "High", "level": "high", "note": "0.7 GB/week still on fallback. 6 control devices are past their planned replacement date." },
+            { "title": "Vendor certification slipping", "tag": "Med", "level": "med", "note": "Certification for the PLC-S line moved to March 2027. No replacement is in stock." }
+          ]
+        }
+      }
+    },
+
+    "cio_planned_steps": {
+      "by_situation": {
+        "default": {
+          "rows": [
+            { "title": "15 Dec · Firmware update", "tag": "Med", "level": "med", "note": "Meter portal restarts for about 20 min, night window." },
+            { "title": "31 Dec · Switch off fallback (proposed)", "tag": "High", "level": "high", "note": "Meter portal and outage map lose data." },
+            { "title": "Feb 2027 · 5 replacement units", "tag": "Low", "level": "low", "note": "No customer impact." }
+          ]
+        },
+        "suspected_attack": {
+          "rows": [
+            { "title": "11 Nov · Isolate SG-14 (proposed)", "tag": "Med", "level": "med", "note": "Gateway offline for about 2 h. The backup path via scada-hub-01 keeps 95 % of telemetry." },
+            { "title": "15 Dec · Firmware update", "tag": "Med", "level": "med", "note": "Meter portal restarts for about 20 min, night window." },
+            { "title": "31 Dec · Switch off fallback (proposed)", "tag": "High", "level": "high", "note": "Meter portal and outage map lose data." }
+          ]
+        },
+        "firmware_window": {
+          "rows": [
+            { "title": "31 Dec · Switch off fallback on 12 devices", "tag": "Med", "level": "med", "note": "Affects 2 customer services. The outage map restarts in the night window." },
+            { "title": "Feb 2027 · 5 replacement units", "tag": "Low", "level": "low", "note": "No customer impact." }
+          ]
+        },
+        "deadline_pressure": {
+          "rows": [
+            { "title": "Feb 2027 · Switch off fallback on 6 control devices", "tag": "Med", "level": "med", "note": "Two services depend on the outage map. Build a 4 h fallback view first." },
+            { "title": "15 Feb · Decision on remaining fallback", "tag": "High", "level": "high", "note": "A switch-off everywhere would take the meter portal offline for up to 4 h." },
+            { "title": "Mar 2027 · Cutover of last 6 devices", "tag": "Med", "level": "med", "note": "Needs a vendor visit. One slot is left before 31 Mar." }
+          ]
+        }
+      }
+    },
+
+    "cio_notifications": {
+      "by_situation": {
+        "default": {
+          "rows": [
+            { "title": "10 Nov · Suspected attack", "tag": "email + SMS", "note": "Substation gateway SG-14, high severity." },
+            { "title": "04 Nov · Milestone at risk", "tag": "digest", "note": "Forecast dropped below 85." }
+          ]
+        },
+        "suspected_attack": {
+          "rows": [
+            { "title": "10 Nov · Suspected attack", "tag": "email + SMS", "note": "Substation gateway SG-14, high severity. Isolation proposed." },
+            { "title": "04 Nov · Milestone at risk", "tag": "digest", "note": "Forecast dropped below 85." }
+          ]
+        },
+        "firmware_window": {
+          "rows": [
+            { "title": "15 Dec · Firmware wave 2 complete", "tag": "digest", "note": "9 devices moved to PQC firmware. Readiness is 77." },
+            { "title": "14 Dec · Suspected attack closed", "tag": "digest", "note": "The SG-14 path was a misconfigured hop and has been removed." }
+          ]
+        },
+        "deadline_pressure": {
+          "rows": [
+            { "title": "01 Feb · Milestone at risk", "tag": "email + SMS", "note": "Forecast 82 vs required 85." },
+            { "title": "28 Jan · Fallback decision requested", "tag": "email", "note": "Security Officer and Project Manager asked for a position." }
+          ]
+        }
+      }
+    },
+
+    "pm_blockers": {
+      "by_situation": {
+        "default": {
+          "summary": "38 devices are still on classical fallback.",
+          "rows": [
+            { "title": "No quantum-safe hardware", "tag": "21", "details": [["Unblocks", "Q2 2028"], ["Owner", "Field operations"]] },
+            { "title": "Firmware not yet deployed", "tag": "9", "details": [["Unblocks", "15 Dec (+4 pts)"], ["Owner", "Migration team"]] },
+            { "title": "Vendor certification", "tag": "5", "details": [["Unblocks", "Feb 2027"], ["Owner", "Procurement"]] },
+            { "title": "Unknown cause", "tag": "3", "details": [["Owner", "Security team"]] }
+          ]
+        },
+        "firmware_window": {
+          "summary": "29 devices are still on fallback. 9 moved to PQC firmware on 15 Dec.",
+          "rows": [
+            { "title": "No quantum-safe hardware", "tag": "21", "details": [["Unblocks", "Q2 2028"], ["Owner", "Field operations"]] },
+            { "title": "Vendor certification", "tag": "5", "details": [["Unblocks", "Feb 2027"], ["Owner", "Procurement"]] },
+            { "title": "Unknown cause", "tag": "3", "details": [["Owner", "Security team"]] }
+          ]
+        },
+        "deadline_pressure": {
+          "summary": "33 devices are still on fallback.",
+          "rows": [
+            { "title": "No quantum-safe hardware", "tag": "21", "details": [["Unblocks", "Q2 2028"], ["Owner", "Field operations"]] },
+            { "title": "Firmware not yet deployed", "tag": "4", "details": [["Unblocks", "Mar 2027 (wave 3)"], ["Owner", "Migration team"]] },
+            { "title": "Vendor certification", "tag": "6", "details": [["Unblocks", "Mar 2027"], ["Owner", "Procurement"]] },
+            { "title": "Unknown cause", "tag": "2", "details": [["Owner", "Security team"]] }
+          ]
+        }
+      }
+    },
+
+    "pm_exceptions": {
+      "by_situation": {
+        "default": {
+          "summary": "9 exceptions · 1 expired",
+          "rows": [
+            { "title": "EX-04 · PLC-S-008", "tag": "Expired", "level": "high", "details": [["Reason", "Vendor certification"], ["Owner", "Procurement lead"], ["Expired", "01 Nov 2026"]] },
+            { "title": "EX-01 · RTU-N-031", "tag": "30 Nov", "level": "med", "details": [["Reason", "No quantum-safe hardware"], ["Owner", "Field operations lead"]] },
+            { "title": "EX-03 · CAM-N-019", "tag": "10 Dec", "level": "med", "details": [["Reason", "Waiting for firmware"], ["Owner", "Migration team lead"]] }
+          ],
+          "footer": "+ 6 more, not close to expiry."
+        },
+        "firmware_window": {
+          "summary": "7 exceptions · 0 expired",
+          "rows": [
+            { "title": "EX-01 · RTU-N-031", "tag": "30 Jan", "level": "med", "details": [["Reason", "No quantum-safe hardware"], ["Owner", "Field operations lead"], ["Renewed", "30 Nov 2026"]] },
+            { "title": "EX-03 · CAM-N-019", "tag": "Closed", "level": "low", "details": [["Reason", "Firmware installed 15 Dec"], ["Owner", "Migration team lead"]] }
+          ],
+          "footer": "+ 5 more, not close to expiry."
+        },
+        "deadline_pressure": {
+          "summary": "9 exceptions · 3 expire before 31 Mar",
+          "rows": [
+            { "title": "EX-01 · RTU-N-031", "tag": "28 Feb", "level": "high", "details": [["Reason", "No quantum-safe hardware"], ["Owner", "Field operations lead"]] },
+            { "title": "EX-05 · PLC-S-011", "tag": "15 Mar", "level": "high", "details": [["Reason", "Vendor certification slipping"], ["Owner", "Procurement lead"]] },
+            { "title": "EX-03 · CAM-N-019", "tag": "31 Mar", "level": "med", "details": [["Reason", "Waiting for firmware wave 3"], ["Owner", "Migration team lead"]] }
+          ],
+          "footer": "+ 6 more, not close to expiry."
+        }
+      }
+    },
+
+    "sec_attacks": {
+      "by_situation": {
+        "default": {
+          "summary": "2 open",
+          "rows": [
+            { "title": "SG-14 ↔ scada-hub-02", "tag": "High", "level": "high", "details": [["When", "10 Nov 03:12"], ["Negotiated", "X25519 only"], ["Normally", "X25519MLKEM768"], ["Changed", "New hop 10.4.7.22 in path"]] },
+            { "title": "MTR-GW-12 ↔ billing-api", "tag": "Med", "level": "med", "details": [["When", "08 Nov 14:50"], ["Negotiated", "ECDHE after retries"], ["Normally", "0–1 retries/day"], ["Changed", "14 failures in 1 h"]] }
+          ]
+        },
+        "suspected_attack": {
+          "summary": "3 open · 1 new in the last hour",
+          "rows": [
+            { "title": "SG-14 ↔ scada-hub-02", "tag": "High", "level": "high", "details": [["When", "10 Nov 03:12"], ["Negotiated", "X25519 only"], ["Normally", "X25519MLKEM768"], ["Changed", "New hop 10.4.7.22 in path"], ["Status", "Isolation proposed, awaiting CIO"]] },
+            { "title": "SCADA-HUB-02 ↔ historian-01", "tag": "High", "level": "high", "details": [["When", "10 Nov 06:05"], ["Negotiated", "X25519 only"], ["Normally", "X25519MLKEM768"], ["Changed", "Server certificate pin changed"]] },
+            { "title": "MTR-GW-12 ↔ billing-api", "tag": "Med", "level": "med", "details": [["When", "08 Nov 14:50"], ["Negotiated", "ECDHE after retries"], ["Normally", "0–1 retries/day"], ["Changed", "14 failures in 1 h"]] }
+          ]
+        },
+        "firmware_window": {
+          "summary": "0 open · 2 closed in December",
+          "rows": [
+            { "title": "SG-14 ↔ scada-hub-02", "tag": "Closed", "level": "low", "details": [["Closed", "14 Dec"], ["Cause", "Misconfigured hop, removed"]] },
+            { "title": "MTR-GW-12 ↔ billing-api", "tag": "Closed", "level": "low", "details": [["Closed", "11 Dec"], ["Cause", "Retry storm after DNS change"]] }
+          ]
+        },
+        "deadline_pressure": {
+          "summary": "1 open · 3 events in January",
+          "rows": [
+            { "title": "MTR-GW-12 ↔ billing-api", "tag": "High", "level": "high", "details": [["When", "27 Jan 22:40"], ["Negotiated", "ECDHE after retries"], ["Normally", "0–1 retries/day"], ["Changed", "Repeat of the November pattern"]] }
+          ]
+        }
+      }
+    },
+
+    "sec_exposure": {
+      "by_situation": {
+        "default": {
+          "rows": [
+            { "title": "MTR-GW-12", "tag": "High", "level": "high", "details": [["Traffic", "1.10 GB/wk"], ["Data", "Customer usage · 7 yr"]] },
+            { "title": "RTU-N-031", "tag": "High", "level": "high", "details": [["Traffic", "0.41 GB/wk"], ["Data", "Control · 10+ yr"]] },
+            { "title": "RTU-N-044", "tag": "High", "level": "high", "details": [["Traffic", "0.38 GB/wk"], ["Data", "Credentials · 10+ yr"]] },
+            { "title": "SNS-W-207", "tag": "Low", "level": "low", "details": [["Traffic", "0.95 GB/wk"], ["Data", "Pressure · about 3 days"]] }
+          ],
+          "footer": "+ 108 more. Exposure = traffic × how long the data stays valuable."
+        },
+        "suspected_attack": {
+          "rows": [
+            { "title": "SG-14 ↔ scada-hub-02", "tag": "High", "level": "high", "details": [["Traffic", "0.66 GB/wk"], ["Data", "Control · 10+ yr"]] },
+            { "title": "MTR-GW-12", "tag": "High", "level": "high", "details": [["Traffic", "1.10 GB/wk"], ["Data", "Customer usage · 7 yr"]] },
+            { "title": "RTU-N-031", "tag": "High", "level": "high", "details": [["Traffic", "0.41 GB/wk"], ["Data", "Control · 10+ yr"]] }
+          ],
+          "footer": "+ 115 more. Exposure = traffic × how long the data stays valuable."
+        },
+        "firmware_window": {
+          "rows": [
+            { "title": "RTU-N-044", "tag": "High", "level": "high", "details": [["Traffic", "0.38 GB/wk"], ["Data", "Credentials · 10+ yr"]] },
+            { "title": "MTR-GW-12", "tag": "Med", "level": "med", "details": [["Traffic", "1.10 GB/wk"], ["Data", "Customer usage · 7 yr"]] },
+            { "title": "SNS-W-207", "tag": "Low", "level": "low", "details": [["Traffic", "0.95 GB/wk"], ["Data", "Pressure · about 3 days"]] }
+          ],
+          "footer": "+ 81 more. Exposure = traffic × how long the data stays valuable."
+        },
+        "deadline_pressure": {
+          "rows": [
+            { "title": "MTR-GW-12", "tag": "High", "level": "high", "details": [["Traffic", "1.10 GB/wk"], ["Data", "Customer usage · 7 yr"]] },
+            { "title": "RTU-N-031", "tag": "High", "level": "high", "details": [["Traffic", "0.41 GB/wk"], ["Data", "Control · 10+ yr"]] },
+            { "title": "RTU-N-044", "tag": "High", "level": "high", "details": [["Traffic", "0.38 GB/wk"], ["Data", "Credentials · 10+ yr"]] }
+          ],
+          "footer": "+ 93 more. Exposure = traffic × how long the data stays valuable."
+        }
+      }
+    }
+  }
+}

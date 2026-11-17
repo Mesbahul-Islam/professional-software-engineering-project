@@ -1,0 +1,166 @@
+{
+  "meta": {
+    "organisation": "Aurora Grid (fictional)",
+    "dashboard_version": "2.0",
+    "sprint": 2,
+    "as_of": "2026-11-17",
+    "synthetic": true,
+    "next_board_report": "2026-12-10",
+    "monitoring_points_total": 300,
+    "note": "All records are synthetic. Every number on the dashboard is calculated from the records below. Change a record, reload the page, and all views update."
+  },
+
+  "contract": {
+    "id": "SA-2024-017",
+    "customer": "Kestrel Water (fictional)",
+    "short_name": "Kestrel Water",
+    "deadline": "2027-03-31",
+    "required_readiness": 85,
+    "covered_services": ["meter-portal", "billing", "scada-control", "field-telemetry"],
+    "proposed_change": {
+      "received": "2026-11-13",
+      "summary": "Adds the outage map to the services covered by the agreement from 1 Jan 2027. Deadline and target stay the same.",
+      "adds_services": ["outage-map"],
+      "status": "Under review"
+    }
+  },
+
+  "rules": {
+    "forecast_months": 3,
+    "at_risk_margin": 3,
+    "sensitivity_weight": { "high": 3, "medium": 2, "low": 1 },
+    "status_text": "GREEN only when all three checks pass. RED when the forecast is more than 3 points below the contract target, or a high-severity downgrade alert is open. AMBER otherwise. Accepted exceptions still count as exposure.",
+    "hndl_text": "HNDL rating per connection: HIGH = high-sensitivity data that stays valuable 5+ years. MEDIUM = high-sensitivity data with a shorter life, or medium-sensitivity data that stays valuable 1+ year. LOW = everything else (for example telemetry that is worthless within days).",
+    "readiness_text": "Readiness = share of connections using ML-KEM (X25519MLKEM768), weighted by data sensitivity (high 3×, medium 2×, low 1×). Measured monthly per service. A scope's score is the average of its services, weighted by connection volume.",
+    "forecast_text": "Forecast = today's score + the average monthly gain of the last 3 months × months left until the contract deadline."
+  },
+
+  "roles": {
+    "cio": { "label": "CIO", "question": "Are we on track for our biggest customer?", "stance": "No customer outages, no extra budget this year, meet the contract deadline." },
+    "pm": { "label": "Project Manager", "question": "How close are we, and what is blocking us?", "stance": "Keep fallback for legacy field devices until certified replacements arrive in 2028." },
+    "sec": { "label": "Security Officer", "question": "What can be harvested today and decrypted later?", "stance": "Disable classical fallback on all connections by the end of this quarter." }
+  },
+
+  "indicators": {
+    "status": {
+      "can": "Whether we are on track for the contract deadline and whether recorded traffic is still at risk.",
+      "cannot": "How far we are from green. The three checks behind it show which condition fails."
+    },
+    "deadline": {
+      "can": "Whether the forecast reaches the contract target by the deadline if the current pace continues.",
+      "cannot": "Whether the pace will continue. A delayed firmware wave lowers the forecast."
+    },
+    "readiness": {
+      "can": "How much of the traffic already uses quantum-safe key exchange, weighted by how sensitive it is.",
+      "cannot": "That we are secure. One weak, long-lived connection can matter more than the score suggests."
+    },
+    "hndl": {
+      "can": "How much sensitive, long-lived data travels over classical key exchange each week.",
+      "cannot": "Whether anyone is actually recording it, or when quantum decryption becomes practical."
+    }
+  },
+
+  "services": [
+    { "id": "meter-portal", "name": "Smart-meter portal", "customer_facing": true, "connections": 420, "weight": 320, "readiness": [62, 66, 70, 73, 76, 79] },
+    { "id": "billing", "name": "Billing interface", "customer_facing": true, "connections": 160, "weight": 140, "readiness": [70, 72, 75, 77, 79, 82] },
+    { "id": "scada-control", "name": "Network control (SCADA)", "customer_facing": false, "connections": 310, "weight": 260, "readiness": [55, 60, 63, 66, 69, 72] },
+    { "id": "field-telemetry", "name": "Field telemetry", "customer_facing": false, "connections": 240, "weight": 180, "readiness": [50, 55, 58, 61, 64, 67] },
+    { "id": "outage-map", "name": "Outage map", "customer_facing": true, "connections": 60, "weight": 90, "readiness": [40, 43, 45, 46, 47, 48] },
+    { "id": "corporate-it", "name": "Corporate IT", "customer_facing": false, "connections": 180, "weight": 210, "readiness": [52, 55, 57, 58, 59, 60] }
+  ],
+  "readiness_months": ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"],
+
+  "blockers": {
+    "no-hardware": { "label": "No ML-KEM support in hardware", "owner": "Field operations" },
+    "firmware": { "label": "ML-KEM firmware not yet deployed", "owner": "Migration team" },
+    "vendor-cert": { "label": "Awaiting certified replacement", "owner": "Procurement" },
+    "unknown": { "label": "Cause not yet known", "owner": "Security team" }
+  },
+
+  "devices": [
+    { "id": "RTU-N-031", "type": "Remote terminal unit", "site": "North substation", "blocker": "no-hardware", "unblocks": "Q2 2028", "monitoring_points": 6 },
+    { "id": "RTU-N-044", "type": "Remote terminal unit", "site": "North substation", "blocker": "no-hardware", "unblocks": "Q2 2028", "monitoring_points": 6 },
+    { "id": "RTU-S-012", "type": "Remote terminal unit", "site": "South substation", "blocker": "vendor-cert", "unblocks": "Feb 2027", "monitoring_points": 5 },
+    { "id": "PLC-S-008", "type": "Pump controller", "site": "South pumping station", "blocker": "vendor-cert", "unblocks": "Feb 2027", "monitoring_points": 4 },
+    { "id": "SG-14", "type": "Substation gateway", "site": "East substation", "blocker": "firmware", "unblocks": "15 Dec 2026", "monitoring_points": 12 },
+    { "id": "SG-09", "type": "Substation gateway", "site": "West substation", "blocker": "firmware", "unblocks": "15 Dec 2026", "monitoring_points": 10 },
+    { "id": "MTR-GW-12", "type": "Meter data gateway", "site": "Data centre A", "blocker": "firmware", "unblocks": "15 Dec 2026", "monitoring_points": 0 },
+    { "id": "MTR-GW-07", "type": "Meter data gateway", "site": "Data centre B", "blocker": "no-hardware", "unblocks": "Q4 2027", "monitoring_points": 0 },
+    { "id": "SNS-W-207", "type": "Pressure sensor hub", "site": "West network", "blocker": "no-hardware", "unblocks": "Q2 2028", "monitoring_points": 8 },
+    { "id": "SNS-W-211", "type": "Pressure sensor hub", "site": "West network", "blocker": "no-hardware", "unblocks": "Q2 2028", "monitoring_points": 8 },
+    { "id": "CAM-N-019", "type": "Camera recorder", "site": "North substation", "blocker": "firmware", "unblocks": "15 Dec 2026", "monitoring_points": 0 },
+    { "id": "OMS-FEED-02", "type": "Outage-map feed server", "site": "Data centre A", "blocker": "vendor-cert", "unblocks": "Jan 2027", "monitoring_points": 0 },
+    { "id": "HIST-01", "type": "Process historian", "site": "Control centre", "blocker": "unknown", "unblocks": null, "monitoring_points": 3 },
+    { "id": "BADGE-GW-3", "type": "Access-badge gateway", "site": "Head office", "blocker": "unknown", "unblocks": null, "monitoring_points": 0 },
+    { "id": "PAY-HSM-02", "type": "Payment security module", "site": "Data centre B", "blocker": "vendor-cert", "unblocks": "Feb 2027", "monitoring_points": 0 }
+  ],
+
+  "fallback_connections": [
+    { "id": "C01", "device": "RTU-N-031", "peer": "scada-hub-02", "service": "scada-control", "kex": "X25519", "gb_week": 0.41, "data": "Control commands", "sensitivity": "high", "lifetime_years": 15 },
+    { "id": "C02", "device": "RTU-N-044", "peer": "scada-hub-02", "service": "scada-control", "kex": "X25519", "gb_week": 0.38, "data": "Operator credentials", "sensitivity": "high", "lifetime_years": 10 },
+    { "id": "C03", "device": "RTU-S-012", "peer": "scada-hub-01", "service": "scada-control", "kex": "ECDHE-P256", "gb_week": 0.22, "data": "Control commands", "sensitivity": "high", "lifetime_years": 15 },
+    { "id": "C04", "device": "PLC-S-008", "peer": "scada-hub-01", "service": "scada-control", "kex": "ECDHE-P256", "gb_week": 0.12, "data": "Pump set-points", "sensitivity": "medium", "lifetime_years": 5 },
+    { "id": "C05", "device": "SG-14", "peer": "scada-hub-02", "service": "scada-control", "kex": "X25519", "gb_week": 0.66, "data": "Control commands", "sensitivity": "high", "lifetime_years": 15 },
+    { "id": "C06", "device": "SG-14", "peer": "telemetry-collector", "service": "field-telemetry", "kex": "X25519", "gb_week": 0.30, "data": "Voltage readings", "sensitivity": "low", "lifetime_years": 0.01 },
+    { "id": "C07", "device": "SG-09", "peer": "telemetry-collector", "service": "field-telemetry", "kex": "X25519", "gb_week": 0.27, "data": "Voltage readings", "sensitivity": "low", "lifetime_years": 0.01 },
+    { "id": "C08", "device": "MTR-GW-12", "peer": "billing-api", "service": "billing", "kex": "ECDHE-P256", "gb_week": 1.10, "data": "Customer usage records", "sensitivity": "high", "lifetime_years": 7 },
+    { "id": "C09", "device": "MTR-GW-12", "peer": "meter-portal-api", "service": "meter-portal", "kex": "ECDHE-P256", "gb_week": 0.54, "data": "Customer usage readings", "sensitivity": "medium", "lifetime_years": 2 },
+    { "id": "C10", "device": "MTR-GW-07", "peer": "meter-portal-api", "service": "meter-portal", "kex": "ECDHE-P256", "gb_week": 0.48, "data": "Customer usage readings", "sensitivity": "medium", "lifetime_years": 2 },
+    { "id": "C11", "device": "MTR-GW-07", "peer": "firmware-repo", "service": "meter-portal", "kex": "ECDHE-P256", "gb_week": 0.05, "data": "Firmware downloads", "sensitivity": "low", "lifetime_years": 0.5 },
+    { "id": "C12", "device": "SNS-W-207", "peer": "telemetry-collector", "service": "field-telemetry", "kex": "X25519", "gb_week": 0.95, "data": "Pressure readings", "sensitivity": "low", "lifetime_years": 0.01 },
+    { "id": "C13", "device": "SNS-W-211", "peer": "telemetry-collector", "service": "field-telemetry", "kex": "X25519", "gb_week": 0.81, "data": "Pressure readings", "sensitivity": "low", "lifetime_years": 0.01 },
+    { "id": "C14", "device": "SNS-W-211", "peer": "maintenance-portal", "service": "field-telemetry", "kex": "X25519", "gb_week": 0.02, "data": "Maintenance logins", "sensitivity": "high", "lifetime_years": 10 },
+    { "id": "C15", "device": "CAM-N-019", "peer": "video-archive", "service": "corporate-it", "kex": "RSA-2048", "gb_week": 2.40, "data": "CCTV footage", "sensitivity": "medium", "lifetime_years": 1 },
+    { "id": "C16", "device": "OMS-FEED-02", "peer": "outage-map-web", "service": "outage-map", "kex": "ECDHE-P256", "gb_week": 0.35, "data": "Outage locations", "sensitivity": "low", "lifetime_years": 0.02 },
+    { "id": "C17", "device": "OMS-FEED-02", "peer": "crm", "service": "outage-map", "kex": "ECDHE-P256", "gb_week": 0.08, "data": "Customer contact details", "sensitivity": "high", "lifetime_years": 7 },
+    { "id": "C18", "device": "HIST-01", "peer": "scada-hub-02", "service": "scada-control", "kex": "X25519", "gb_week": 0.90, "data": "Process history", "sensitivity": "medium", "lifetime_years": 10 },
+    { "id": "C19", "device": "BADGE-GW-3", "peer": "hr-directory", "service": "corporate-it", "kex": "RSA-2048", "gb_week": 0.03, "data": "Staff identities", "sensitivity": "high", "lifetime_years": 10 },
+    { "id": "C20", "device": "PAY-HSM-02", "peer": "billing-api", "service": "billing", "kex": "ECDHE-P256", "gb_week": 0.15, "data": "Payment tokens", "sensitivity": "high", "lifetime_years": 5 }
+  ],
+
+  "alerts": [
+    { "id": "AL-031", "detected": "2026-11-16 03:12", "device": "VPN-GW-01", "peer": "hr-directory", "service": "corporate-it", "severity": "high", "status": "open", "negotiated": "X25519 only (classical)", "normally": "X25519MLKEM768", "changed": "A new network hop (10.4.7.22) appeared in the path", "action": "Isolate the link and compare the route with the last known good one." },
+    { "id": "AL-029", "detected": "2026-11-14 14:50", "device": "MTR-GW-15", "peer": "billing-api", "service": "billing", "severity": "medium", "status": "open", "negotiated": "ECDHE-P256 after 14 retries", "normally": "X25519MLKEM768 on first try, 0–1 retries/day", "changed": "14 handshake failures within 1 hour", "action": "Check the gateway's TLS policy; watch for repeats." },
+    { "id": "AL-024", "detected": "2026-11-03 09:20", "device": "CAM-N-022", "peer": "video-archive", "service": "corporate-it", "severity": "low", "status": "closed", "negotiated": "RSA-2048", "normally": "X25519MLKEM768", "changed": "TLS policy reset by a software update", "action": "Fixed on 4 Nov." }
+  ],
+
+  "exceptions": [
+    { "id": "EX-01", "device": "RTU-N-031", "reason": "no-hardware", "owner": "Field operations lead", "accepted": "2026-06-01", "expires": "2026-11-30" },
+    { "id": "EX-02", "device": "RTU-N-044", "reason": "no-hardware", "owner": "Field operations lead", "accepted": "2026-06-01", "expires": "2027-05-31" },
+    { "id": "EX-03", "device": "CAM-N-019", "reason": "firmware", "owner": "Migration team lead", "accepted": "2026-09-10", "expires": "2026-12-10" },
+    { "id": "EX-04", "device": "PLC-S-008", "reason": "vendor-cert", "owner": "Procurement lead", "accepted": "2026-05-01", "expires": "2026-11-01" },
+    { "id": "EX-05", "device": "SNS-W-207", "reason": "no-hardware", "owner": "Field operations lead", "accepted": "2026-07-15", "expires": "2027-06-30" },
+    { "id": "EX-06", "device": "SNS-W-211", "reason": "no-hardware", "owner": "Field operations lead", "accepted": "2026-07-15", "expires": "2027-06-30" },
+    { "id": "EX-07", "device": "BADGE-GW-3", "reason": "unknown", "owner": "Security team lead", "accepted": "2026-10-15", "expires": "2027-01-15" },
+    { "id": "EX-08", "device": "OMS-FEED-02", "reason": "vendor-cert", "owner": "Procurement lead", "accepted": "2026-08-01", "expires": "2027-01-31" }
+  ],
+
+  "planned_steps": [
+    { "date": "2026-12-15", "title": "Firmware wave 2 on 4 devices", "services": ["scada-control", "field-telemetry", "meter-portal", "billing", "corporate-it"], "outage_risk": "medium", "customer_impact": "The meter portal restarts for about 20 minutes in the night window." },
+    { "date": "2026-12-31", "title": "Switch off fallback everywhere (proposed by Security)", "services": ["scada-control", "field-telemetry", "meter-portal", "billing", "outage-map", "corporate-it"], "outage_risk": "high", "customer_visible": false, "customer_impact": "Devices that cannot use the new encryption go offline. The meter portal and outage map would lose data." },
+    { "date": "2027-01-20", "title": "Replace the outage-map feed server", "services": ["outage-map"], "outage_risk": "medium", "customer_impact": "The outage map is read-only for about 1 hour." },
+    { "date": "2027-02-15", "title": "Install 2 certified replacement units", "services": ["scada-control", "billing"], "outage_risk": "low", "customer_impact": "No customer impact. Work happens in the maintenance window." }
+  ],
+
+  "risks": [
+    { "id": "R1", "severity": "high", "scopes": ["customer", "org"], "title": "Customer and control data can be recorded now and read later", "plain": "Some links still use old encryption for data that stays valuable for years. Someone could record it today and decrypt it once quantum computers are strong enough.", "decision": "Protect the December firmware update and keep the funded replacements on schedule." },
+    { "id": "R2", "severity": "high", "scopes": ["org"], "title": "Suspected tampering on an internal link", "plain": "One internal link suddenly stopped using the new encryption. Security is investigating. Customer services are not affected.", "decision": "No decision yet. Security reports by 19 Nov." },
+    { "id": "R3", "severity": "medium", "scopes": ["customer"], "title": "Customer asks to add the outage map to the agreement", "plain": "The proposed change adds our least-ready service. If accepted as is, the contract forecast drops to the edge of the target.", "decision": "Accept as proposed, or negotiate a later date for the outage map." },
+    { "id": "R4", "severity": "medium", "scopes": ["customer", "org"], "title": "December update is the critical step", "plain": "Most of the remaining gain depends on one firmware update on 15 December. If it slips, the deadline is at risk.", "decision": "Keep the 15 Dec window free of other changes." },
+    { "id": "R5", "severity": "medium", "scopes": ["org"], "title": "Corporate systems are falling behind", "plain": "Badge and camera systems are the least ready, but they are not covered by the customer agreement.", "decision": "Plan them for the 2027 budget." }
+  ],
+
+  "notification_rules": [
+    { "when": "High-severity downgrade alert on any service", "channel": "Email + SMS within 15 minutes" },
+    { "when": "Problem that affects a service covered by the customer agreement", "channel": "Email the same day" },
+    { "when": "Contract forecast falls below the target", "channel": "Email the same day" },
+    { "when": "Exception expired or expiring within 30 days", "channel": "Weekly digest" }
+  ],
+
+  "notifications": [
+    { "sent": "2026-11-16 03:27", "severity": "high", "services": ["corporate-it"], "channel": "Email + SMS", "title": "Suspected attack on an internal link", "detail": "An internal link stopped using quantum-safe encryption after a network change. Security is investigating. Customer services are not affected." },
+    { "sent": "2026-11-14 15:30", "severity": "medium", "services": ["billing"], "channel": "Email", "title": "Unusual failures on a billing link", "detail": "A billing link fell back to old encryption after repeated failures. It affects a service covered by the Kestrel Water agreement." },
+    { "sent": "2026-11-13 10:05", "severity": "medium", "services": ["outage-map"], "channel": "Email", "title": "Customer proposed a contract change", "detail": "Kestrel Water wants the outage map covered from 1 Jan 2027." },
+    { "sent": "2026-11-09 08:00", "severity": "medium", "services": ["scada-control"], "channel": "Weekly digest", "title": "Exception expired without review", "detail": "The fallback exception for a pumping-station controller expired on 1 Nov." }
+  ]
+}

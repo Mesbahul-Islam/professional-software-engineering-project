@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PQC Dashboard Mockups</title>
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f5f6f8; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 16px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .card { display: block; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; margin-top: 14px; color: inherit; text-decoration: none; }
+  .card:hover { border-color: #2563eb; }
+  .card h2 { font-size: 18px; margin: 0 0 4px; color: #2563eb; }
+  .muted { color: #6b7280; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>PQC Migration Dashboard – 3 layout mockups</h1>
+  <p class="muted">Sprint 1 · synthetic data · same data in all three, only the layout differs.
+  Roles: CIO, Project Manager, Security Officer. Each first screen shows only the overall status and one headline per role;
+  more detail appears as you click.</p>
+
+  <a class="card" href="version-a-layered-briefing.html">
+    <h2>A · Layered Briefing</h2>
+    Status, then one big headline per role, then four cards. Clicking a card opens a panel with tabs;
+    each row in a tab expands for full context.
+  </a>
+
+  <a class="card" href="version-b-three-lanes.html">
+    <h2>B · Three Lanes</h2>
+    One column per role with one big answer. Dropdowns under each column reveal risks, blockers or alerts,
+    and each item expands further. The disagreement on switching off fallback is one dropdown under all columns.
+  </a>
+
+  <a class="card" href="version-c-shared-facts.html">
+    <h2>C · Shared Facts, Three Lenses</h2>
+    Status and three role cards. Tabs (Devices, Switch-off options, Timeline) start closed. Clicking a role card
+    opens the device list filtered for that role; each device expands to show the security, project and business view side by side.
+  </a>
+</main>
+</body>
+</html>

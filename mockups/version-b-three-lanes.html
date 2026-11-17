@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PQC Dashboard – Version B: Three Lanes</title>
+<title>PQC Dashboard – Version B: Three Lanes (data-driven)</title>
 <!--
-  MOCKUP – Version B "Three Lanes" (clean, progressive disclosure)
-    First screen: one column per role, each showing ONE big answer.
-    Click a dropdown in a column to reveal more; dropdowns inside reveal even more.
-    The fallback trade-off (where the roles disagree) is one dropdown under all lanes.
+  MOCKUP – Version B "Three Lanes", Sprint 2: data-driven.
+  Every number and sentence is read from pqc-data.json (single source of truth).
+  This file only holds layout and rendering code.
+  Choose a situation in the dropdown (or ?situation=attack, see pqc-data.json) to see other values.
+  Run from this folder with a local server, e.g.:  python3 -m http.server 8000
   All data is SYNTHETIC. Roles are used instead of names.
 -->
 <style>
   :root {
-    --cio: #7c3aed; --pm: #2563eb; --sec: #0e7490;
     --red: #dc2626; --amber: #d97706; --green: #16a34a;
     --ink: #111827; --muted: #6b7280; --line: #e5e7eb; --bg: #f5f6f8;
   }
@@ -22,24 +22,31 @@
   header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; background: #fff; border-bottom: 1px solid var(--line); }
   header h1 { font-size: 20px; margin: 0; }
   header .meta { color: var(--muted); font-size: 13px; }
-  .status { display: flex; align-items: center; gap: 10px; margin-left: auto; font-weight: 700; color: #92400e; background: #fef3c7; padding: 6px 14px; border-radius: 999px; }
-  .status .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--amber); }
+  header select { font: inherit; font-size: 14px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .status { display: flex; align-items: center; gap: 10px; margin-left: auto; font-weight: 700; padding: 6px 14px; border-radius: 999px; }
+  .status .dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; }
+  .status.amber { color: #92400e; background: #fef3c7; }
+  .status.red { color: var(--red); background: #fee2e2; }
+  .status.green { color: #166534; background: #dcfce7; }
   .synthetic { background: #f3f4f6; color: var(--muted); font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+  .situation-note { width: 100%; margin: 0; color: var(--muted); font-size: 14px; }
   main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
   .muted { color: var(--muted); }
+  .error { background: #fee2e2; color: var(--red); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; }
   .pill { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
   .pill.red { background: #fee2e2; color: var(--red); } .pill.amber { background: #fef3c7; color: #92400e; } .pill.green { background: #dcfce7; color: #166534; }
 
+  .t-red { color: var(--red); } .t-amber { color: var(--amber); } .t-green { color: var(--green); }
+
   .lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
   .lane { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-  .lane .top { padding: 24px; border-top: 8px solid; }
-  .lane.cio .top { border-top-color: var(--cio); } .lane.pm .top { border-top-color: var(--pm); } .lane.sec .top { border-top-color: var(--sec); }
-  .role { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-  .cio .role { color: var(--cio); } .pm .role { color: var(--pm); } .sec .role { color: var(--sec); }
+  .lane .top { padding: 24px; border-top: 8px solid var(--c); }
+  .role { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
   .q { color: var(--muted); font-size: 15px; margin: 2px 0 14px; }
   .big { font-size: 48px; font-weight: 800; line-height: 1.05; }
   .big small { font-size: 18px; font-weight: 600; color: var(--muted); }
   .line { font-size: 16px; margin-top: 6px; }
+  .src { font-size: 12px; color: var(--muted); margin-top: 12px; }
 
   /* Dropdowns (level 2) */
   details.drop { border-top: 1px solid var(--line); }
@@ -53,12 +60,14 @@
   details.row { border-bottom: 1px solid #f3f4f6; padding: 10px 0; }
   details.row:last-child { border-bottom: 0; }
   details.row summary { cursor: pointer; display: flex; justify-content: space-between; gap: 10px; align-items: center; list-style: none; font-size: 15px; }
-  details.row summary span:first-child::before { content: "▸ "; color: var(--muted); }
-  details.row[open] summary span:first-child::before { content: "▾ "; }
+  details.row summary > span:first-child::before { content: "▸ "; color: var(--muted); }
+  details.row[open] summary > span:first-child::before { content: "▾ "; }
   details.row .body { margin: 8px 0 2px 16px; font-size: 14px; color: #374151; }
+  details.row .body p { margin: 0; }
   dl { display: grid; grid-template-columns: 110px 1fr; gap: 3px 10px; margin: 0; }
   dt { color: var(--muted); } dd { margin: 0; }
   .explain { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .check { margin: 6px 0; font-size: 15px; }
 
   /* Shared trade-off */
   details.shared { margin-top: 24px; background: #fff; border: 1px dashed #9ca3af; border-radius: 16px; }
@@ -67,128 +76,232 @@
   .shared .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 24px; }
   .shared .cols > div { border-top: 4px solid; padding-top: 10px; }
   .shared .middle { margin: 16px 24px 24px; background: #f9fafb; border-radius: 10px; padding: 12px 16px; }
+  .shared .question { margin: 0 24px 12px; font-weight: 600; }
 
   @media (max-width: 900px) { .lanes, .shared .cols { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>PQC Migration Dashboard</h1>
-  <span class="meta">Aurora Grid (fictional) · 11 Nov 2026</span>
+  <h1 id="title">PQC Migration Dashboard</h1>
+  <span class="meta" id="meta"></span>
   <span class="synthetic">SYNTHETIC · MOCKUP B</span>
-  <span class="status" title="Green only when: no sensitive data on fallback, no open high alert, and forecast meets contract target. Exceptions still count as exposure."><span class="dot"></span>Overall: AMBER</span>
+  <label class="meta">Situation
+    <select id="situation" aria-label="Situation"></select>
+  </label>
+  <span class="status" id="overall" title=""></span>
+  <p class="situation-note" id="situation-summary"></p>
 </header>
 
 <main>
-  <section class="lanes">
-    <!-- ================= CIO ================= -->
-    <div class="lane cio">
-      <div class="top">
-        <div class="role">CIO</div>
-        <div class="q">Do I need to worry?</div>
-        <div class="big">At risk</div>
-        <div class="line">Contract milestone in <b>140 days</b> (31 Mar 2027)</div>
-      </div>
-      <details class="drop"><summary>Top 3 risks</summary><div class="inner">
-        <details class="row"><summary><span>Sensitive data could be decrypted later</span><span class="pill red">High</span></summary>
-          <div class="body">12 older devices send control data that stays valuable for 10+ years. Decision: prioritise their replacement within the current budget.</div></details>
-        <details class="row"><summary><span>Contract milestone may be missed</span><span class="pill amber">Med</span></summary>
-          <div class="body">Forecast 80 vs required 85. The 15 Dec update adds ~4 points. Decision: protect that window.</div></details>
-        <details class="row"><summary><span>Possible tampering on one link</span><span class="pill amber">Med</span></summary>
-          <div class="body">Under investigation; security report due 13 Nov.</div></details>
-      </div></details>
-      <details class="drop"><summary>Customer outage risk of planned steps</summary><div class="inner">
-        <details class="row"><summary><span>15 Dec · Firmware update</span><span class="pill amber">Med</span></summary>
-          <div class="body">Meter portal restarts ~20 min, night window.</div></details>
-        <details class="row"><summary><span>31 Dec · Switch off fallback (proposed)</span><span class="pill red">High</span></summary>
-          <div class="body">Meter portal and outage map lose data.</div></details>
-        <details class="row"><summary><span>Feb 2027 · 5 replacement units</span><span class="pill green">Low</span></summary>
-          <div class="body">No customer impact.</div></details>
-      </div></details>
-      <details class="drop"><summary>Notifications sent to you</summary><div class="inner">
-        <details class="row"><summary><span>10 Nov · Suspected attack</span><span class="muted">email + SMS</span></summary><div class="body">Substation gateway SG-14, high severity.</div></details>
-        <details class="row"><summary><span>04 Nov · Milestone at risk</span><span class="muted">digest</span></summary><div class="body">Forecast dropped below 85.</div></details>
-      </div></details>
-    </div>
+  <div id="error" class="error" hidden></div>
+  <section class="lanes" id="lanes"></section>
 
-    <!-- ================= PROJECT MANAGER ================= -->
-    <div class="lane pm">
-      <div class="top">
-        <div class="role">Project Manager</div>
-        <div class="q">How close are we?</div>
-        <div class="big">72 <small>/ 100</small></div>
-        <div class="line">Readiness · target 85 · <b>▲ 3</b> this month</div>
-      </div>
-      <details class="drop"><summary>What is blocking (38 devices)</summary><div class="inner">
-        <details class="row"><summary><span>No quantum-safe hardware</span><b>21</b></summary>
-          <div class="body"><dl><dt>Unblocks</dt><dd>Q2 2028</dd><dt>Owner</dt><dd>Field operations</dd></dl></div></details>
-        <details class="row"><summary><span>Firmware not yet deployed</span><b>9</b></summary>
-          <div class="body"><dl><dt>Unblocks</dt><dd>15 Dec (+4 pts)</dd><dt>Owner</dt><dd>Migration team</dd></dl></div></details>
-        <details class="row"><summary><span>Vendor certification</span><b>5</b></summary>
-          <div class="body"><dl><dt>Unblocks</dt><dd>Feb 2027</dd><dt>Owner</dt><dd>Procurement</dd></dl></div></details>
-        <details class="row"><summary><span>Unknown</span><b>3</b></summary>
-          <div class="body"><dl><dt>Owner</dt><dd>Security team</dd></dl></div></details>
-      </div></details>
-      <details class="drop"><summary>Exceptions (9 · 1 expired)</summary><div class="inner">
-        <details class="row"><summary><span>EX-04 · PLC-S-008</span><span class="pill red">Expired</span></summary>
-          <div class="body"><dl><dt>Reason</dt><dd>Vendor certification</dd><dt>Owner</dt><dd>Procurement lead</dd><dt>Expired</dt><dd>01 Nov 2026</dd></dl></div></details>
-        <details class="row"><summary><span>EX-01 · RTU-N-031</span><span class="pill amber">30 Nov</span></summary>
-          <div class="body"><dl><dt>Reason</dt><dd>No quantum-safe hardware</dd><dt>Owner</dt><dd>Field operations lead</dd></dl></div></details>
-        <details class="row"><summary><span>EX-03 · CAM-N-019</span><span class="pill amber">10 Dec</span></summary>
-          <div class="body"><dl><dt>Reason</dt><dd>Waiting for firmware</dd><dt>Owner</dt><dd>Migration team lead</dd></dl></div></details>
-        <p class="explain">+ 6 more, not close to expiry.</p>
-      </div></details>
-      <details class="drop"><summary>Score trend</summary><div class="inner">
-        <svg width="100%" height="110" viewBox="0 0 300 110" aria-label="Jun 58 to Nov 72, target 85">
-          <line x1="0" y1="15" x2="300" y2="15" stroke="#111827" stroke-dasharray="4 4"/>
-          <polyline fill="none" stroke="#2563eb" stroke-width="3" points="0,100 60,90 120,80 180,74 240,64 300,54"/>
-        </svg>
-        <p class="explain">Jun 58 → Nov 72 · dashed line = target 85. Weighted by data sensitivity.</p>
-      </div></details>
-    </div>
-
-    <!-- ================= SECURITY OFFICER ================= -->
-    <div class="lane sec">
-      <div class="top">
-        <div class="role">Security Officer</div>
-        <div class="q">What is still vulnerable?</div>
-        <div class="big">112 <small>connections</small></div>
-        <div class="line"><b style="color:var(--red)">0.9 GB/week</b> of sensitive data exposed</div>
-      </div>
-      <details class="drop"><summary>Suspected attacks (2 open)</summary><div class="inner">
-        <details class="row"><summary><span>SG-14 ↔ scada-hub-02</span><span class="pill red">High</span></summary>
-          <div class="body"><dl><dt>When</dt><dd>10 Nov 03:12</dd><dt>Negotiated</dt><dd>X25519 only</dd><dt>Normally</dt><dd>X25519MLKEM768</dd><dt>Changed</dt><dd>New hop 10.4.7.22 in path</dd></dl></div></details>
-        <details class="row"><summary><span>MTR-GW-12 ↔ billing-api</span><span class="pill amber">Med</span></summary>
-          <div class="body"><dl><dt>When</dt><dd>08 Nov 14:50</dd><dt>Negotiated</dt><dd>ECDHE after retries</dd><dt>Normally</dt><dd>0–1 retries/day</dd><dt>Changed</dt><dd>14 failures in 1 h</dd></dl></div></details>
-      </div></details>
-      <details class="drop"><summary>Highest-exposure connections</summary><div class="inner">
-        <details class="row"><summary><span>MTR-GW-12</span><span class="pill red">High</span></summary>
-          <div class="body"><dl><dt>Traffic</dt><dd>1.10 GB/wk</dd><dt>Data</dt><dd>Customer usage · 7 yr</dd></dl></div></details>
-        <details class="row"><summary><span>RTU-N-031</span><span class="pill red">High</span></summary>
-          <div class="body"><dl><dt>Traffic</dt><dd>0.41 GB/wk</dd><dt>Data</dt><dd>Control · 10+ yr</dd></dl></div></details>
-        <details class="row"><summary><span>RTU-N-044</span><span class="pill red">High</span></summary>
-          <div class="body"><dl><dt>Traffic</dt><dd>0.38 GB/wk</dd><dt>Data</dt><dd>Credentials · 10+ yr</dd></dl></div></details>
-        <details class="row"><summary><span>SNS-W-207</span><span class="pill green">Low</span></summary>
-          <div class="body"><dl><dt>Traffic</dt><dd>0.95 GB/wk</dd><dt>Data</dt><dd>Pressure · ~3 days</dd></dl></div></details>
-        <p class="explain">+ 108 more. Exposure = traffic × how long data stays valuable.</p>
-      </div></details>
-      <details class="drop"><summary>Why the status is not green</summary><div class="inner">
-        <p style="margin:0">✗ Sensitive data still on fallback<br>✗ One open high-severity alert<br>✗ Forecast below contract target</p>
-        <p class="explain">Exceptions are accepted risk, not removed risk.</p>
-      </div></details>
-    </div>
-  </section>
-
-  <!-- ================= SHARED TRADE-OFF ================= -->
+  <!-- ================= SHARED TRADE-OFF (filled from data) ================= -->
   <details class="shared">
-    <summary>Where the roles disagree: should classical fallback be switched off?</summary>
-    <div class="cols">
-      <div style="border-color:var(--cio)"><b>CIO</b><br>No customer outages, no extra budget.<br><span class="muted">Switching off now → 2 customer services lose data.</span></div>
-      <div style="border-color:var(--pm)"><b>Project Manager</b><br>Keep for legacy devices until 2028.<br><span class="muted">Switching off now → 38 devices offline, monitoring 87 %.</span></div>
-      <div style="border-color:var(--sec)"><b>Security Officer</b><br>Switch off everywhere by 31 Dec.<br><span class="muted">Keeping it → 0.9 GB/week sensitive data harvestable.</span></div>
-    </div>
-    <div class="middle"><b>Option suggested by the data:</b> switch off only on the 12 high-sensitivity devices — removes the sensitive exposure, no customer impact, monitoring stays at 96 %.</div>
+    <summary id="decision-title"></summary>
+    <p class="question" id="decision-question"></p>
+    <div class="cols" id="decision-cols"></div>
+    <div class="middle" id="decision-suggested"></div>
   </details>
 </main>
+
+<script>
+const DATA_URL = 'pqc-data.json';
+const PILL = { high: 'red', med: 'amber', low: 'green' };
+const SITUATION_ALIASES = { attack: 'suspected_attack', firmware: 'firmware_window', deadline: 'deadline_pressure' };
+let DATA = null;
+
+const $ = (id) => document.getElementById(id);
+
+// Small helper: create an element with text (textContent, no HTML injection).
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+
+// Situation: from ?situation=... if valid, otherwise the default in the JSON.
+function currentSituation() {
+  let s = new URLSearchParams(location.search).get('situation');
+  s = SITUATION_ALIASES[s] || s;
+  return DATA.situations.some(x => x.id === s) ? s : DATA.default_situation;
+}
+
+// Pick the value for a situation; fall back to 'default' if there is no override.
+function pickStat(name, sid) {
+  const values = DATA.stats[name].values;
+  return values[sid] || values.default;
+}
+function pickReport(name, sid) {
+  const byS = DATA.reports[name].by_situation;
+  return byS[sid] || byS.default;
+}
+
+function renderHeader(sid) {
+  const sit = DATA.situations.find(s => s.id === sid);
+  const status = pickStat('overall_status', sid);
+  $('title').textContent = DATA.layout.title;
+  $('meta').textContent = `${DATA.meta.organisation} · as of ${sit.as_of}`;
+  $('situation-summary').textContent = sit.summary;
+  const pill = $('overall');
+  pill.className = 'status ' + status.tone;
+  pill.title = DATA.meta.status_rule;
+  pill.innerHTML = '';
+  pill.appendChild(el('span', 'dot'));
+  pill.appendChild(document.createTextNode('Overall: ' + status.big));
+}
+
+function renderLane(lane, sid) {
+  const role = DATA.roles[lane.role];
+  const top = pickStat(lane.top_stat, sid);
+  const box = el('div', 'lane');
+  box.style.setProperty('--c', role.colour);
+
+  const t = el('div', 'top');
+  t.appendChild(el('div', 'role', role.label));
+  t.appendChild(el('div', 'q', role.question));
+  const big = el('div', 'big t-' + top.tone);
+  big.appendChild(document.createTextNode(top.big));
+  if (top.big_unit) big.appendChild(el('small', null, ' ' + top.big_unit));
+  t.appendChild(big);
+  t.appendChild(el('div', 'line' + (top.line_tone ? ' t-' + top.line_tone : ''), top.line));
+  t.appendChild(el('div', 'src', `Source: ${top.source} · updated ${top.updated}`));
+  box.appendChild(t);
+
+  lane.drops.forEach(d => box.appendChild(renderDrop(d, sid)));
+  return box;
+}
+
+function renderDrop(d, sid) {
+  const det = el('details', 'drop');
+  det.appendChild(el('summary', null, d.label));
+  const inner = el('div', 'inner');
+
+  if (d.type === 'report') {
+    const r = pickReport(d.source, sid);
+    if (r.summary) inner.appendChild(el('p', 'explain', r.summary));
+    r.rows.forEach(row => inner.appendChild(renderRow(row)));
+    if (r.footer) inner.appendChild(el('p', 'explain', r.footer));
+  } else if (d.type === 'checks') {
+    pickStat(d.stat, sid).forEach(c => {
+      const p = el('p', 'check t-' + (c.failing ? 'red' : 'green'), (c.failing ? '✗ ' : '✓ ') + c.text);
+      inner.appendChild(p);
+    });
+    if (d.note) inner.appendChild(el('p', 'explain', d.note));
+  } else if (d.type === 'trend') {
+    const s = pickStat(d.stat, sid);
+    const first = s.trend[0];
+    const last = s.trend[s.trend.length - 1];
+    const wrap = el('div');
+    wrap.innerHTML = trendSvg(s);
+    inner.appendChild(wrap);
+    inner.appendChild(el('p', 'explain',
+      `${first.m} ${first.v} → ${last.m} ${last.v} · dashed line = target ${s.target}` + (d.note ? ' · ' + d.note : '')));
+  }
+
+  det.appendChild(inner);
+  return det;
+}
+
+function renderRow(row) {
+  const det = el('details', 'row');
+  const sum = el('summary');
+  sum.appendChild(el('span', null, row.title));
+  if (row.level) sum.appendChild(el('span', 'pill ' + PILL[row.level], row.tag));
+  else sum.appendChild(el('b', null, row.tag || ''));
+  det.appendChild(sum);
+
+  const body = el('div', 'body');
+  if (row.details) {
+    const dl = el('dl');
+    row.details.forEach(([k, v]) => { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); });
+    body.appendChild(dl);
+  }
+  if (row.note) body.appendChild(el('p', null, row.note));
+  det.appendChild(body);
+  return det;
+}
+
+// Score trend as a small inline SVG. Scale is fixed at 50–90 points.
+function trendSvg(s) {
+  const W = 300, H = 110, lo = 50, hi = 90;
+  const n = s.trend.length;
+  const x = (i) => (n === 1 ? 0 : (i * W) / (n - 1));
+  const y = (v) => H - ((v - lo) / (hi - lo)) * H;
+  const pts = s.trend.map((p, i) => `${x(i)},${y(p.v)}`).join(' ');
+  const labels = s.trend.map((p, i) => {
+    const anchor = i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle');
+    return `<text x="${x(i)}" y="${H + 12}" font-size="10" text-anchor="${anchor}" fill="#6b7280">${p.m}</text>`;
+  }).join('');
+  return `<svg width="100%" height="124" viewBox="0 0 ${W} ${H + 14}" aria-label="Readiness trend, target ${s.target}">
+    <line x1="0" y1="${y(s.target)}" x2="${W}" y2="${y(s.target)}" stroke="#111827" stroke-dasharray="4 4"/>
+    <polyline fill="none" stroke="#2563eb" stroke-width="3" points="${pts}"/>
+    ${labels}</svg>`;
+}
+
+function renderDecision(sid) {
+  const cfg = DATA.layout.decision;
+  const d = pickStat(cfg.stat, sid);
+  $('decision-title').textContent = cfg.label;
+  $('decision-question').textContent = d.question;
+
+  const cols = $('decision-cols');
+  cols.innerHTML = '';
+  d.positions.forEach(p => {
+    const role = DATA.roles[p.role];
+    const c = el('div');
+    c.style.borderColor = role.colour;
+    c.appendChild(el('b', null, role.label));
+    c.appendChild(document.createElement('br'));
+    c.appendChild(document.createTextNode(p.stance));
+    c.appendChild(document.createElement('br'));
+    c.appendChild(el('span', 'muted', p.impact));
+    cols.appendChild(c);
+  });
+
+  const mid = $('decision-suggested');
+  mid.innerHTML = '';
+  mid.appendChild(el('b', null, 'Option suggested by the data: '));
+  mid.appendChild(document.createTextNode(d.suggested));
+}
+
+function render() {
+  const sid = currentSituation();
+  renderHeader(sid);
+  const lanes = $('lanes');
+  lanes.innerHTML = '';
+  DATA.layout.lanes.forEach(l => lanes.appendChild(renderLane(l, sid)));
+  renderDecision(sid);
+}
+
+async function init() {
+  try {
+    const res = await fetch(DATA_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = await res.json();
+  } catch (e) {
+    const box = $('error');
+    box.hidden = false;
+    box.textContent = 'Could not load pqc-data.json (' + e.message + '). Serve this folder with a local web server, e.g. python3 -m http.server 8000, then open http://localhost:8000/version-b-three-lanes.html';
+    return;
+  }
+
+  const sel = $('situation');
+  DATA.situations.forEach(s => { const o = el('option', null, s.label); o.value = s.id; sel.appendChild(o); });
+  sel.value = currentSituation();
+  sel.addEventListener('change', () => {
+    const u = new URL(location.href);
+    u.searchParams.set('situation', sel.value);
+    history.replaceState(null, '', u);
+    render();
+  });
+
+  render();
+}
+
+init();
+</script>
 </body>
 </html>
